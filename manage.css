@@ -1,0 +1,82 @@
+/* Shared shell supplies typography, button styling and panel surfaces. */
+.mgr { --mgr-line: #e2e5e9; --mgr-muted: #687382; --mgr-ink: #171e2c; --mgr-accent: #f26738; --mgr-teal: #3e9481; display: grid; gap: 18px; min-width: 0; }
+.mgr *, .mgr *::before, .mgr *::after { box-sizing: border-box; }
+.mgr .mgr-panel, .mgr .mgr-data-card { min-width: 0; padding: clamp(18px, 2.4vw, 32px); }
+.mgr p, .mgr h2, .mgr h3 { margin: 0; }
+.mgr .mgr-intro > h2, .mgr .mgr-data-card > h3 { margin: 4px 0 7px; line-height: 1.45; }
+.mgr .mgr-intro > h2 { font-size: 1.3rem; }
+.mgr .mgr-data-card > h3 { font-size: 1.08rem; }
+.mgr .eyebrow { letter-spacing: .14em; font-size: .66rem; font-weight: 750; }
+.mgr .muted { color: var(--mgr-muted); }
+.mgr .mgr-intro > .muted, .mgr .mgr-data-card > .muted, .mgr .mgr-form-foot .muted { font-size: .85rem; line-height: 1.7; }
+.mgr .mgr-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.mgr button { cursor: pointer; }
+.mgr button:disabled { opacity: .45; cursor: default; }
+.mgr :is(button,input,select,[tabindex]):focus-visible { outline: 2px solid var(--mgr-teal); outline-offset: 2px; }
+.mgr .mgr-toolbar { display: grid; grid-template-columns: minmax(130px,1.8fr) repeat(2,minmax(108px,.9fr)) auto; align-items: end; gap: 10px; margin: 22px 0 16px; }
+.mgr .mgr-field { min-width: 0; display: grid; gap: 6px; }
+.mgr .mgr-label { color: var(--mgr-muted); font-size: .75rem; font-weight: 650; }
+.mgr input:not([type='file']), .mgr select { min-width: 0; width: 100%; height: 39px; padding: 0 10px; border: 1px solid var(--mgr-line); border-radius: 8px; background: #fff; color: var(--mgr-ink); font: inherit; font-size: .82rem; }
+.mgr input::placeholder { color: #7b8490; }
+.mgr .mgr-quiet { font-size: .77rem; min-height: 39px; }
+.mgr .mgr-count { margin: 8px 0; font-size: .75rem; font-variant-numeric: tabular-nums; }
+.mgr .mgr-scroll { max-width: 100%; overflow-x: auto; }
+.mgr .mgr-table { width: 100%; min-width: 630px; border-collapse: collapse; font-size: .83rem; text-align: left; }
+.mgr .mgr-table :is(th,td) { border-bottom: 1px solid var(--mgr-line); padding: 11px 8px; }
+.mgr .mgr-table th { color: var(--mgr-muted); background: #f7f8fa; font-size: .73rem; white-space: nowrap; }
+.mgr .mgr-table :is(th:nth-child(5),td:nth-child(5)) { text-align: right; }
+.mgr .mgr-table td { overflow-wrap: anywhere; }
+.mgr .mgr-detail { min-width: 120px; max-width: 290px; }
+.mgr .mgr-detail > :is(b,small) { display: block; }
+.mgr .mgr-detail small { margin-top: 2px; font-size: .72rem; }
+.mgr .mgr-kind { display: inline-flex; justify-content: center; align-items: center; min-width: 40px; padding: 3px 8px; border-radius: 20px; font-size: .7rem; font-weight: 650; white-space: nowrap; }
+.mgr .mgr-income { background: #e4f4ef; color: #297563; }
+.mgr .mgr-expense { background: #fff0e9; color: #a44b2b; }
+.mgr .mgr-transfer { background: #edf0f6; color: #55627b; }
+.mgr .mgr-money, .mgr .mgr-date { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mgr .mgr-money { font-weight: 680; }
+.mgr .mgr-money-income { color: #297563; }
+.mgr .mgr-actions, .mgr .mgr-pager { display: flex; align-items: center; gap: 5px; }
+.mgr .mgr-small { padding: 4px 8px; min-height: 30px; white-space: nowrap; font-size: .73rem; }
+.mgr .mgr-danger { color: #a23f2c; }
+.mgr .mgr-pager { margin-top: 14px; justify-content: flex-end; gap: 12px; font-size: .8rem; }
+.mgr .mgr-empty { padding: 36px 16px; border: 1px dashed var(--mgr-line); border-radius: 10px; text-align: center; }
+.mgr .mgr-empty > p { font-size: .82rem; margin-top: 6px; }
+.mgr .mgr-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1px; background: var(--mgr-line); margin: 20px 0 14px; border: 1px solid var(--mgr-line); border-radius: 10px; overflow: hidden; }
+.mgr .mgr-stat { display: grid; gap: 4px; background: #f8f9fa; padding: clamp(9px,1.4vw,18px); }
+.mgr .mgr-stat > span { font-size: .74rem; }
+.mgr .mgr-stat > strong { font-size: clamp(1rem,1.8vw,1.5rem); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.mgr .mgr-over { color: #ad4529; }
+.mgr .mgr-budget-row { display: grid; grid-template-columns: minmax(68px,.7fr) minmax(160px,2.4fr) minmax(100px,.8fr); align-items: center; gap: clamp(14px,3vw,40px); border-bottom: 1px solid var(--mgr-line); padding: 16px 0; }
+.mgr .mgr-category { overflow-wrap: anywhere; font-size: .92rem; }
+.mgr .mgr-budget-use, .mgr .mgr-form-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mgr .mgr-budget-use { font-size: .76rem; flex-wrap: wrap; }
+.mgr .mgr-meter { height: 7px; margin-top: 7px; border-radius: 10px; overflow: hidden; background: #eef0f2; }
+.mgr .mgr-meter > span { display: block; height: 100%; border-radius: inherit; background: var(--mgr-teal); }
+.mgr .mgr-meter.is-over > span { background: var(--mgr-accent); }
+.mgr .mgr-budget-input { display: flex; align-items: center; gap: 5px; font-size: .76rem; }
+.mgr .mgr-budget-input input { text-align: right; font-variant-numeric: tabular-nums; }
+.mgr .mgr-form-foot { margin-top: 18px; flex-wrap: wrap; }
+.mgr .mgr-data-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.mgr .mgr-data-card { display: flex; flex-direction: column; align-items: flex-start; }
+.mgr .mgr-data-card > .muted { flex: 1; margin-bottom: 18px; }
+.mgr .mgr-demo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 13px 16px; border: 1px solid #f2d9be; border-radius: 9px; background: #fff7ec; color: #824a25; font-size: .82rem; line-height: 1.6; }
+@media (max-width: 850px) {
+  .mgr .mgr-toolbar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 620px) {
+  .mgr .mgr-panel, .mgr .mgr-data-card { padding: 16px; }
+  .mgr .mgr-data-grid { grid-template-columns: 1fr; }
+  .mgr .mgr-budget-row { grid-template-columns: minmax(0,1fr) minmax(95px,.55fr); gap: 8px 16px; }
+  .mgr .mgr-budget-input { grid-column: 2; grid-row: 1; }
+  .mgr .mgr-budget-progress { grid-column: 1 / -1; grid-row: 2; }
+  .mgr .mgr-stat > span { font-size: .68rem; }
+}
+@media (max-width: 380px) {
+  .mgr .mgr-toolbar { grid-template-columns: minmax(0,1fr); }
+}
+@media print {
+  .mgr :is(.mgr-toolbar,.mgr-actions,.mgr-pager,button) { display: none; }
+  .mgr .mgr-scroll { overflow: visible; }
+  .mgr .mgr-table { min-width: 0; }
+}

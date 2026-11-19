@@ -1,0 +1,37 @@
+# User ledgers, imports and exports are never source files.
+*.csv
+*.tsv
+*.json
+*.jsonl
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.sql
+*.bak
+*.xlsx
+*.ofx
+*.qif
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.token
+/backups/
+/private/
+/imports/
+/exports/
+
+# Local packaging, caches, test profiles and screenshots
+*.zip
+__pycache__/
+*.py[cod]
+node_modules/
+/tests/browser-db-*/
+/tests/.tmp*/
+/tests/*.png
+.DS_Store
+Thumbs.db
