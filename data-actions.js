@@ -17,7 +17,7 @@
     const key=String(tag).toUpperCase();if(!['IMPORT','EXPORT','BACKUP','RESTORE'].includes(key))throw new TypeError('Unknown data action');
     const button=document.createElement('button');button.type='button';button.className='tally-action-card';button.dataset.dataAction=key.toLowerCase();button.dataset.actionTag=key;
     const badge=document.createElement('span');badge.className='tally-action-icon';badge.append(icon(key,'tally-action-glyph'));
-    const name=document.createElement('span');name.className='tally-action-name';name.textContent=title;
+    const name=document.createElement('span');name.className='tally-action-name';name.textContent=title;if(opts.detail){const sub=document.createElement('small');sub.className='tally-action-detail';sub.textContent=opts.detail;name.append(sub)}
     button.append(badge,name,icon('arrow','tally-action-arrow'));button.disabled=!!opts.disabled || typeof action!=='function';
     if(button.disabled&&opts.disabledReason){button.title=String(opts.disabledReason);button.setAttribute('aria-description',String(opts.disabledReason))}
     if(typeof action==='function')button.addEventListener('click',event=>{if(!button.disabled)action(event)});

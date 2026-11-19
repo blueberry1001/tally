@@ -4,3 +4,5 @@
 .tally-action-card:not(:disabled):hover{background:color-mix(in srgb,var(--action-wash) 28%,white);border-color:var(--action-ink)}.tally-action-card:focus-visible,.mgr .tally-action-card:focus-visible{outline:3px solid var(--action-ink);outline-offset:3px}.tally-action-card:disabled,.mgr .tally-action-card:disabled{cursor:not-allowed;opacity:.57}.tally-action-icon{display:grid;place-items:center;width:45px;height:45px;border-radius:12px;color:var(--action-ink);background:var(--action-wash)}.tally-action-glyph{width:24px;height:24px}.tally-action-name{font-weight:700;font-size:clamp(14px,1.1vw,17px);line-height:1.5;overflow-wrap:anywhere}.tally-action-arrow{width:18px;height:18px;color:var(--action-ink)}
 @media(max-width:590px){.tally-action-card{min-height:68px;gap:11px;padding:13px 15px}.tally-action-icon{width:36px;height:36px;border-radius:9px}.tally-action-glyph{width:20px;height:20px}.tally-action-arrow{width:15px;height:15px}}
 @media(prefers-reduced-motion:reduce){.tally-action-card{transition:none}}
+
+.tally-action-detail{display:block;margin-top:4px;font-size:11px;line-height:1.5;font-weight:400;color:#606d79}

@@ -101,7 +101,7 @@
   const layoutKey='tally.treemap.layout.v1', clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
   let volatileLayout=null;
   function readLayout(){try{const store=window.localStorage;if(!store)return volatileLayout;const p=JSON.parse(store.getItem(layoutKey));return p&&Number.isFinite(p.width)&&p.width>0&&p.width<=1&&Number.isFinite(p.height)&&p.height>=160&&p.height<=960?{width:p.width,height:p.height}:null}catch{return volatileLayout}}
-  function saveLayout(pref){volatileLayout=pref;try{if(pref)window.localStorage?.setItem(layoutKey,JSON.stringify(pref));else window.localStorage?.removeItem(layoutKey)}catch{/* Optional even on file: and in private browsing. */}}
+  function saveLayout(pref){volatileLayout=pref;try{const store=window.localStorage;if(!store)return false;if(pref)store.setItem(layoutKey,JSON.stringify(pref));else store.removeItem(layoutKey);return true}catch{return false}}
   function bounds(available,viewHeight){const maxW=Math.max(1,Math.floor(available)),maxH=Math.max(180,Math.min(960,Math.round((viewHeight||820)*.9)));return {minW:Math.min(180,maxW),maxW,minH:180,maxH}}
   function fitted(pref,b){return {width:clamp(Math.round((pref?.width??1)*b.maxW),b.minW,b.maxW),height:clamp(Math.round(pref?.height??(b.maxW<500?345:clamp(b.maxW*.43,300,450))),b.minH,b.maxH)}}
   const cleanups=new WeakMap();
@@ -219,7 +219,7 @@
     release.push(()=>{finish(true);if(raf!==null)window.cancelAnimationFrame?.(raf)});layout();if(raf!==null)window.cancelAnimationFrame(raf);draw();
     return dispose;
   }
-  const api=Object.freeze({render,layout:squarify});
+  const api=Object.freeze({render,layout:squarify,snapshotLayout:readLayout,applyLayout:saveLayout});
   if(typeof window!=='undefined') window.TallyMap=api;
   if(typeof module!=='undefined' && module.exports) module.exports={squarify,groupExpenses:groupFlow,groupFlow,bucket,render};
 })();

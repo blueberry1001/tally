@@ -171,7 +171,8 @@
       budgets[category] = amount;
     }
     const goals=raw.version>=2?window.TallyReportCore.goals(raw.goals):[];
-    const colors=raw.version>=3?P.colors(raw.colors,custom):{},rules=raw.version>=3?P.rules(raw.rules,custom):[];return {rows,budgets,goals,colors,rules,customCategories:custom};
+    const colors=raw.version>=3?P.colors(raw.colors,custom):{},rules=raw.version>=3?P.rules(raw.rules,custom):[];const viewSettings=has(raw,'viewSettings')?window.TallyPortableView.validate(raw.viewSettings,custom):null;
+    return {rows,budgets,goals,colors,rules,customCategories:custom,viewSettings};
   }
   function download(text,mime,filename) {
     const url = URL.createObjectURL(new Blob([text],{type:mime})); const a = el('a'); a.href = url; a.download = filename;
@@ -189,12 +190,17 @@
     const lines = [['日付','種別','タイトル','カテゴリ','金額','取込元'], ...L().rows().map(r => [r.date,types[r.type],r.title,r.category,r.amount,r.source])];
     download('\uFEFF' + lines.map(line => line.map(csvCell).join(',')).join('\r\n') + '\r\n','text/csv;charset=utf-8',`家計簿_全取引_${stamp()}.csv`);
   }
+  function displaySnapshot(){return {version:1,month:L().month(),trendMonths:window.TallyUI.range(),home:window.TallyHomeView.snapshot(),analysis:window.TallyAnalysisView.snapshot(),mapLayout:window.TallyMap.snapshotLayout()}}
+  function applyDisplay(v){
+    // The validated ledger has committed by the time preferences are touched.
+    const saved=[window.TallyUI.restoreHeader(v.month,v.trendMonths),window.TallyHomeView.apply(v.home),window.TallyAnalysisView.apply(v.analysis),window.TallyMap.applyLayout(v.mapLayout)];return saved.every(Boolean);
+  }
   function backupJSON() {
-    const payload = {format:'ledger-backup',version:4,exportedAt:new Date().toISOString(),rows:L().rows(),budgets:L().budgets(),goals:L().goals(),colors:L().colors(),rules:L().rules(),customCategories:L().customCategories()};
+    const payload = {format:'ledger-backup',version:4,exportedAt:new Date().toISOString(),rows:L().rows(),budgets:L().budgets(),goals:L().goals(),colors:L().colors(),rules:L().rules(),customCategories:L().customCategories(),viewSettings:displaySnapshot()};
     validateBackup(payload);
     const text = JSON.stringify(payload,null,2);
     if (new Blob([text]).size > MAX_FILE) throw Error('バックアップの上限（16 MB）を超えています。');
-    download(text,'application/json;charset=utf-8',`家計簿_バックアップ_${stamp()}.json`);
+    download(text,'application/json;charset=utf-8',`Tally_${isDemo()?'デモ_':''}端末引き継ぎ_${stamp()}.json`);
   }
   function data() {
     let root;
@@ -209,20 +215,21 @@
         backup = validateBackup(raw);
       } catch (err) { if (root.isConnected) L().toast(err instanceof Error ? err.message : '読み込みに失敗しました。'); return; }
       if (!root.isConnected || isDemo()) return;
-      L().confirm('バックアップで置き換えますか？',`現在の取引・予算・目標・カテゴリ・色・分類ルールを、ファイル内の取引${backup.rows.length}件・予算${Object.keys(backup.budgets).length}件・目標${backup.goals.length}件・色設定${Object.keys(backup.colors).length}件・分類ルール${backup.rules.length}件・追加カテゴリ${backup.customCategories.expense.length+backup.customCategories.income.length}件に置き換えます。この操作は元に戻せません。`,() => {
+      L().confirm('バックアップで置き換えますか？',`現在の取引・予算・目標・カテゴリ・色・分類ルールを、ファイル内の取引${backup.rows.length}件・予算${Object.keys(backup.budgets).length}件・目標${backup.goals.length}件・色設定${Object.keys(backup.colors).length}件・分類ルール${backup.rules.length}件・追加カテゴリ${backup.customCategories.expense.length+backup.customCategories.income.length}件に置き換えます。${backup.viewSettings?'表示月・ホーム・分析条件・面積図のサイズも引き継ぎます。':'このファイルに表示設定はないため、現在の表示設定は維持します。'}この操作は元に戻せません。`,() => {
         if (!root.isConnected || isDemo()) return;
         try { L().replaceData(backup.rows,backup.budgets,backup.goals,backup.colors,backup.rules,backup.customCategories); }
         catch { return; } // One storage write: never restore rows without their budgets.
-        L().refresh(); L().toast('バックアップを復元しました。');
+        let durable=true;if(backup.viewSettings){try{durable=applyDisplay(backup.viewSettings)}catch{durable=false}}
+        L().refresh(); L().toast(!durable?'家計データは復元しましたが、一部の表示設定を保存できませんでした。ブラウザの保存設定を確認してください。':backup.viewSettings?'家計データと表示設定を復元しました。':'バックアップを復元しました。');
       });
     });
     function guarded(fn) { return () => { try { fn(); } catch { L().toast('出力できませんでした。取引データやファイルサイズをご確認ください。'); } }; }
     const card=window.TallyDataActions.card;
     const cards=wrap('div','grid mgr-data-grid',
-      card('IMPORT','CSVをインポート',()=>L().importCSV()),
-      card('EXPORT','CSVをエクスポート',guarded(exportCSV)),
-      card('BACKUP','バックアップを保存',guarded(backupJSON)),
-      card('RESTORE','バックアップから復元',()=>{if(!isDemo())picker.click()},{disabled:isDemo(),disabledReason:'復元は自分の家計簿で利用できます。'}));
+      card('BACKUP','端末引き継ぎ用にエクスポート',guarded(backupJSON),{detail:isDemo()?'デモの明細と設定をJSONに保存します。自分の記録は含まれません。':'JSON · 全明細、予算、カテゴリ、分類ルール、表示設定をまとめて保存'}),
+      card('RESTORE','バックアップから復元',()=>{if(!isDemo())picker.click()},{detail:isDemo()?'自分の家計簿に切り替えると復元できます。':'JSON · 件数を確認して、この端末の家計簿を置き換え',disabled:isDemo(),disabledReason:'復元は自分の家計簿で利用できます。'}),
+      card('IMPORT','CSVをインポート',()=>L().importCSV(),{detail:'PayPayの明細を確認して追加'}),
+      card('EXPORT','CSVをエクスポート',guarded(exportCSV),{detail:'表計算用 · 明細のみ（設定は含みません）'}));
     root = mount(wrap('section','panel mgr-panel',intro('LOCAL DATA','保存データの概要',`保存先：${window.TallyDB?'このPCのSQLite':'このブラウザ'}${isDemo()?'（デモ表示中）':''}。取引 ${L().rows().length.toLocaleString('ja-JP')}件 ／ 予算 ${Object.keys(L().budgets()).length}件`)),cards,picker);
   }
   window.Manager = { transactions,budgets,data };
