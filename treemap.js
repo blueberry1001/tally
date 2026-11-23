@@ -94,7 +94,10 @@
   const rgb=hex=>[1,3,5].map(n=>parseInt(hex.slice(n,n+2),16));
   const blend=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
   const rgbCSS=rgb=>`rgb(${rgb.join(',')})`;
-  function textColor(bg){const c=bg.map(v=>(v/255)<=.04045 ? v/255/12.92 : ((v/255+.055)/1.055)**2.4);return (.2126*c[0]+.7152*c[1]+.0722*c[2])>.20?'#142032':'#ffffff'}
+  // Absolute yen scale, shared by both flows, all categories and all periods.
+  // Halfway at ¥5,000; a smooth roll-off keeps small purchases and large salaries distinguishable.
+  const amountTone=yen=>blend([241,247,247],[23,66,80],1/(1+(5000/yen)**.65));
+  function textColor(bg){const c=bg.map(v=>(v/255)<=.04045 ? v/255/12.92 : ((v/255+.055)/1.055)**2.4);return (.2126*c[0]+.7152*c[1]+.0722*c[2])>.179?'#000000':'#ffffff'}
   const position=(e,x,y,w,h)=>{Object.assign(e.style,{left:x+'px',top:y+'px',width:Math.max(0,w)+'px',height:Math.max(0,h)+'px'});};
   // Store only the user-chosen width fraction and frame height. Temporary viewport clamps
   // (rotation, a narrow host or an on-screen keyboard) never overwrite this preference.
@@ -147,7 +150,9 @@
     for(const [side,label] of [['right','横幅を変更'],['bottom','高さを変更'],['corner','幅と高さを変更']]){const h=dom('button','grip');h.type='button';h.setAttribute('data-tm-grip',side);h.setAttribute('aria-controls',atlas.id);h.setAttribute('aria-describedby',sizeText.id);h.setAttribute('aria-label','マップの'+label+'（矢印キーで調整）');h.title=label+'（矢印キーで調整）';if(side!=='corner'){h.setAttribute('role','separator');h.setAttribute('aria-orientation',side==='right'?'vertical':'horizontal')}h.setAttribute('aria-keyshortcuts',side==='right'?'ArrowLeft ArrowRight':side==='bottom'?'ArrowUp ArrowDown':'ArrowLeft ArrowRight ArrowUp ArrowDown');const mark=dom('i','grip-mark');mark.setAttribute('aria-hidden','true');h.append(mark);frame.append(h);handles[side]=h}
     const legend=dom('div','legend');legend.setAttribute('role','group');legend.setAttribute('aria-label','カテゴリを選択');
     groups.forEach(c=>{const b=btn('legend-btn',null,()=>goCat(active===c.name?'':c.name),`${c.name}、${yen(c.value)}、全体の${pct(c.value,total)}。${active===c.name?'絞り込みを解除':'絞り込む'}`);b.setAttribute('aria-pressed',String(active===c.name));b.style.setProperty('--tm-accent',palette(c.name));b.append(dom('i','swatch'),dom('span','legend-name',c.name),dom('small','legend-pct',pct(c.value,total)));legend.append(b)});
-    mapBox.append(legend);
+    const scale=dom('div','amount-scale');scale.setAttribute('role','group');scale.setAttribute('aria-label','取引タイルの金額と濃さの目安');scale.append(dom('span','scale-title','金額が大きいほど濃く表示'));
+    for(const value of [100,1000,10000,100000]){const sample=dom('span','scale-step'),chip=dom('i','swatch');chip.setAttribute('aria-hidden','true');chip.style.setProperty('--tm-accent',rgbCSS(amountTone(value)));sample.append(chip,dom('span','',yen(value)));scale.append(sample)}
+    mapBox.append(scale,legend);
     const drillBox=dom('div','details');drillBox.hidden=true;mapBox.append(drillBox);
     let origin=null;
     function showList(name,items,isRest=false,trigger=null,page=0,focus=true){
@@ -170,17 +175,16 @@
         const cramped=w<78 || h<60;const bandH=cramped?h:Math.min(34,Math.max(23,Math.floor(h*.15)));
         position(caption,0,0,w,bandH);caption.title=`${c.name}　${yen(c.value)}（全体の${pct(c.value,total)}）`;
         caption.append(dom('b','',c.name));if(w>120)caption.append(dom('span','band-val',yen(c.value)));region.append(caption);
-        if(!cramped){const ih=h-bandH-2,iw=w-4;const parts=bucket(c.items,Math.max(0,ih*iw),!!active);let rank=0;
+        if(!cramped){const ih=h-bandH-2,iw=w-4;const parts=bucket(c.items,Math.max(0,ih*iw),!!active);
           for(const {item:d,x:tx,y:ty,width:tw,height:th} of squarify(parts,iw,ih)){
             const r=d.row,summary=!!d.rest,txt=summary?`その他 ${count(d.rest.length)}件`:String(r.title||'名称なし');
             const desc=`${c.name} ｜ ${summary?'少額明細の一覧':r.date} ｜ ${txt} ｜ ${yen(d.value)}`;
             const tile=btn('tile',null,summary?ev=>showList(c.name,d.rest,true,ev.currentTarget):onEdit(r),desc);tile.title=desc;
-            // Use a bounded, consistent tone ramp within each category. A special
-            // hatch distinguishes real transactions from the aggregate without color alone.
-            const tone=blend(base,[250,248,244],.10+(rank%6)*.095);tile.style.setProperty('--tm-tile',rgbCSS(tone));tile.style.setProperty('--tm-text',textColor(tone));if(summary)tile.classList.add('tm-bundle');
+            // A bundle uses its displayed total, exactly like a single transaction.
+            const tone=amountTone(d.value);tile.style.setProperty('--tm-tile',rgbCSS(tone));tile.style.setProperty('--tm-text',textColor(tone));if(summary)tile.classList.add('tm-bundle');
             position(tile,tx+2,bandH+ty+1,Math.max(0,tw-1.5),Math.max(0,th-1.5));
             if(tw>=35 && th>=18){tile.append(dom('span','tile-label',txt));if(tw>=56&&th>=44)tile.append(dom('strong','tile-value',yen(d.value)));if(!summary&&tw>=105&&th>=82)tile.append(dom('small','tile-date',r.date))}
-            else tile.tabIndex=-1;region.append(tile);rank++;
+            else tile.tabIndex=-1;region.append(tile);
           }
         }
         frag.append(region);

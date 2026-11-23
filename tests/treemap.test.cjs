@@ -45,6 +45,16 @@ test('drill, SQL rankings and no-data views honor explicit empty inputs',()=>{
   render(root,rows,{category:'食費',rankedRows:[rows[1],rows[2]],onCategory:c=>back=c});assert.equal(root.all('rank-card').length,1);assert.equal(root.all('rank-name')[0].textContent,'購入 rank');assert.equal(root.all('sum')[0].children[1].textContent,'¥75');assert.equal(root.all('tile').length,2);root.all('crumb')[0].click();assert.equal(back,'');
   render(root,rows,{rankedRows:[]});assert.equal(root.all('rank-row').length,0);assert.equal(root.all('rank-empty').length,2);render(root,rows,{category:'存在しない'});assert.equal(root.all('empty').length,1);assert.equal(root.all('tile').length,0);render(root,[],{});assert.equal(root.all('empty').length,1);
 });
+test('equal yen have the same tile fill across categories, ranks, filters, flow and layout; category accents stay independent',()=>{
+  const root=environment();window.TallyUI={color:{食費:'#ffcc00',交通:'#003355'}};
+  const rows=[tx('largest',4000),tx('one',1000),tx('two',1000),tx('train',1000,'交通'),tx('small',100,'交通'),tx('bus',2000,'交通'),tx('income',1000,'給与','income')];
+  const tiles=()=>root.all('tile'),tone=t=>t.style['--tm-tile'],get=id=>tone(tiles().find(t=>t.title.includes('購入 '+id+' ｜')));
+  render(root,rows);const fixed=get('one');assert.equal(get('two'),fixed);assert.equal(get('train'),fixed);
+  const channels=s=>s.match(/\d+/g).map(Number);assert.ok(channels(get('small')).every((v,i)=>v>channels(fixed)[i]));assert.ok(channels(get('largest')).every((v,i)=>v<channels(fixed)[i]));
+  assert.equal(root.all('scale-step')[1].all('swatch')[0].style['--tm-accent'],fixed);assert.deepEqual(root.all('legend-btn').map(b=>b.style['--tm-accent']),['#ffcc00','#003355']);
+  render(root,rows.slice().reverse(),{category:'交通',limit:10});assert.equal(get('train'),fixed);render(root,[rows[1]]);assert.equal(get('one'),fixed);render(root,rows,{type:'income'});assert.equal(get('income'),fixed);
+  const tiny=Array.from({length:40},(_,i)=>tx('tiny'+i,25));render(root,[tx('big',100000),...tiny]);assert.equal(tone(root.all('bundle')[0]),fixed);
+});
 const layoutKey='tally.treemap.layout.v1';
 function layoutFixture(store=new Map()){
   const root=environment();let observer,disconnected=0;const listeners={};Object.assign(window,{innerHeight:800,localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)},ResizeObserver:class{constructor(fn){observer=fn}observe(){}disconnect(){disconnected++}},addEventListener:(k,fn)=>listeners[k]=fn,removeEventListener:(k,fn)=>{if(listeners[k]===fn)delete listeners[k]}});
