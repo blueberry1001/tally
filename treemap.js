@@ -96,7 +96,23 @@
   const rgbCSS=rgb=>`rgb(${rgb.join(',')})`;
   // Absolute yen scale, shared by both flows, all categories and all periods.
   // Halfway at ¥5,000; a smooth roll-off keeps small purchases and large salaries distinguishable.
-  const amountTone=yen=>blend([241,247,247],[23,66,80],1/(1+(5000/yen)**.65));
+  // In OKLab, L is perceptual lightness; the a/b direction is category hue.
+  const linear=v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4;
+  function categoryChroma(base){
+    if(base.every(x=>x===base[0]))return [0,0];
+    const [r,g,b]=base.map(v=>linear(v/255));
+    const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+    return [1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s];
+  }
+  function amountTone(yen,[a,b]){
+    const L=.95-.61/(1+(5000/yen)**.65);
+    function toLinear(k){const l=(L+k*(.3963377774*a+.2158037573*b))**3,m=(L-k*(.1055613458*a+.0638541728*b))**3,s=(L-k*(.0894841775*a+1.291485548*b))**3;
+      return [4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s]}
+    // Reduce only chroma if the chosen hue cannot be displayed at this L in sRGB.
+    const fits=c=>c.every(x=>x>=0&&x<=1);let c=toLinear(1);
+    if(!fits(c)){let lo=0,hi=1;for(let i=0;i<12;i++){const mid=(lo+hi)/2;if(fits(toLinear(mid)))lo=mid;else hi=mid}c=toLinear(lo)}
+    return c.map(v=>Math.round(255*(v<=.0031308?12.92*v:1.055*v**(1/2.4)-.055)));
+  }
   function textColor(bg){const c=bg.map(v=>(v/255)<=.04045 ? v/255/12.92 : ((v/255+.055)/1.055)**2.4);return (.2126*c[0]+.7152*c[1]+.0722*c[2])>.179?'#000000':'#ffffff'}
   const position=(e,x,y,w,h)=>{Object.assign(e.style,{left:x+'px',top:y+'px',width:Math.max(0,w)+'px',height:Math.max(0,h)+'px'});};
   // Store only the user-chosen width fraction and frame height. Temporary viewport clamps
@@ -150,8 +166,9 @@
     for(const [side,label] of [['right','横幅を変更'],['bottom','高さを変更'],['corner','幅と高さを変更']]){const h=dom('button','grip');h.type='button';h.setAttribute('data-tm-grip',side);h.setAttribute('aria-controls',atlas.id);h.setAttribute('aria-describedby',sizeText.id);h.setAttribute('aria-label','マップの'+label+'（矢印キーで調整）');h.title=label+'（矢印キーで調整）';if(side!=='corner'){h.setAttribute('role','separator');h.setAttribute('aria-orientation',side==='right'?'vertical':'horizontal')}h.setAttribute('aria-keyshortcuts',side==='right'?'ArrowLeft ArrowRight':side==='bottom'?'ArrowUp ArrowDown':'ArrowLeft ArrowRight ArrowUp ArrowDown');const mark=dom('i','grip-mark');mark.setAttribute('aria-hidden','true');h.append(mark);frame.append(h);handles[side]=h}
     const legend=dom('div','legend');legend.setAttribute('role','group');legend.setAttribute('aria-label','カテゴリを選択');
     groups.forEach(c=>{const b=btn('legend-btn',null,()=>goCat(active===c.name?'':c.name),`${c.name}、${yen(c.value)}、全体の${pct(c.value,total)}。${active===c.name?'絞り込みを解除':'絞り込む'}`);b.setAttribute('aria-pressed',String(active===c.name));b.style.setProperty('--tm-accent',palette(c.name));b.append(dom('i','swatch'),dom('span','legend-name',c.name),dom('small','legend-pct',pct(c.value,total)));legend.append(b)});
-    const scale=dom('div','amount-scale');scale.setAttribute('role','group');scale.setAttribute('aria-label','取引タイルの金額と濃さの目安');scale.append(dom('span','scale-title','金額が大きいほど濃く表示'));
-    for(const value of [100,1000,10000,100000]){const sample=dom('span','scale-step'),chip=dom('i','swatch');chip.setAttribute('aria-hidden','true');chip.style.setProperty('--tm-accent',rgbCSS(amountTone(value)));sample.append(chip,dom('span','',yen(value)));scale.append(sample)}
+    const scale=dom('div','amount-scale');scale.setAttribute('role','group');scale.setAttribute('aria-label','取引タイルの金額と濃さの目安');scale.append(dom('span','scale-title','色はカテゴリ、濃さは金額'));
+    const scaleChroma=active?categoryChroma(rgb(palette(active))):[0,0];
+    for(const value of [100,1000,10000,100000]){const sample=dom('span','scale-step'),chip=dom('i','swatch');chip.setAttribute('aria-hidden','true');chip.style.setProperty('--tm-accent',rgbCSS(amountTone(value,scaleChroma)));sample.append(chip,dom('span','',yen(value)));scale.append(sample)}
     mapBox.append(scale,legend);
     const drillBox=dom('div','details');drillBox.hidden=true;mapBox.append(drillBox);
     let origin=null;
@@ -169,7 +186,7 @@
       const frag=document.createDocumentFragment();
       for(const {item:c,x,y,width,height} of squarify(groupsShown,W,H)){
         const w=Math.max(0,width-3),h=Math.max(0,height-3);if(w<1||h<1)continue;
-        const region=dom('div','region'),base=rgb(palette(c.name)),dark=blend(base,[18,26,42],.50);
+        const region=dom('div','region'),base=rgb(palette(c.name)),chroma=categoryChroma(base),dark=blend(base,[18,26,42],.50);
         position(region,x+1.5,y+1.5,w,h);region.style.setProperty('--tm-region',rgbCSS(dark));region.setAttribute('role','group');region.setAttribute('aria-label',`${c.name}、${yen(c.value)}`);
         const groupAction=()=>goCat(active===c.name?'':c.name), caption=btn('band',null,groupAction,`${c.name}、${yen(c.value)}。${active===c.name?'全体に戻る':'カテゴリで絞り込む'}`);
         const cramped=w<78 || h<60;const bandH=cramped?h:Math.min(34,Math.max(23,Math.floor(h*.15)));
@@ -181,7 +198,7 @@
             const desc=`${c.name} ｜ ${summary?'少額明細の一覧':r.date} ｜ ${txt} ｜ ${yen(d.value)}`;
             const tile=btn('tile',null,summary?ev=>showList(c.name,d.rest,true,ev.currentTarget):onEdit(r),desc);tile.title=desc;
             // A bundle uses its displayed total, exactly like a single transaction.
-            const tone=amountTone(d.value);tile.style.setProperty('--tm-tile',rgbCSS(tone));tile.style.setProperty('--tm-text',textColor(tone));if(summary)tile.classList.add('tm-bundle');
+            const tone=amountTone(d.value,chroma);tile.style.setProperty('--tm-tile',rgbCSS(tone));tile.style.setProperty('--tm-text',textColor(tone));if(summary)tile.classList.add('tm-bundle');
             position(tile,tx+2,bandH+ty+1,Math.max(0,tw-1.5),Math.max(0,th-1.5));
             if(tw>=35 && th>=18){tile.append(dom('span','tile-label',txt));if(tw>=56&&th>=44)tile.append(dom('strong','tile-value',yen(d.value)));if(!summary&&tw>=105&&th>=82)tile.append(dom('small','tile-date',r.date))}
             else tile.tabIndex=-1;region.append(tile);

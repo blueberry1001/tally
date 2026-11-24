@@ -45,15 +45,18 @@ test('drill, SQL rankings and no-data views honor explicit empty inputs',()=>{
   render(root,rows,{category:'食費',rankedRows:[rows[1],rows[2]],onCategory:c=>back=c});assert.equal(root.all('rank-card').length,1);assert.equal(root.all('rank-name')[0].textContent,'購入 rank');assert.equal(root.all('sum')[0].children[1].textContent,'¥75');assert.equal(root.all('tile').length,2);root.all('crumb')[0].click();assert.equal(back,'');
   render(root,rows,{rankedRows:[]});assert.equal(root.all('rank-row').length,0);assert.equal(root.all('rank-empty').length,2);render(root,rows,{category:'存在しない'});assert.equal(root.all('empty').length,1);assert.equal(root.all('tile').length,0);render(root,[],{});assert.equal(root.all('empty').length,1);
 });
-test('equal yen have the same tile fill across categories, ranks, filters, flow and layout; category accents stay independent',()=>{
-  const root=environment();window.TallyUI={color:{食費:'#ffcc00',交通:'#003355'}};
+test('category hues remain visible while equal yen share perceptual lightness across categories, filters and flows',()=>{
+  const root=environment();window.TallyUI={color:{食費:'#ffcc00',交通:'#003355',給与:'#ff0055'}};
   const rows=[tx('largest',4000),tx('one',1000),tx('two',1000),tx('train',1000,'交通'),tx('small',100,'交通'),tx('bus',2000,'交通'),tx('income',1000,'給与','income')];
-  const tiles=()=>root.all('tile'),tone=t=>t.style['--tm-tile'],get=id=>tone(tiles().find(t=>t.title.includes('購入 '+id+' ｜')));
-  render(root,rows);const fixed=get('one');assert.equal(get('two'),fixed);assert.equal(get('train'),fixed);
-  const channels=s=>s.match(/\d+/g).map(Number);assert.ok(channels(get('small')).every((v,i)=>v>channels(fixed)[i]));assert.ok(channels(get('largest')).every((v,i)=>v<channels(fixed)[i]));
-  assert.equal(root.all('scale-step')[1].all('swatch')[0].style['--tm-accent'],fixed);assert.deepEqual(root.all('legend-btn').map(b=>b.style['--tm-accent']),['#ffcc00','#003355']);
-  render(root,rows.slice().reverse(),{category:'交通',limit:10});assert.equal(get('train'),fixed);render(root,[rows[1]]);assert.equal(get('one'),fixed);render(root,rows,{type:'income'});assert.equal(get('income'),fixed);
-  const tiny=Array.from({length:40},(_,i)=>tx('tiny'+i,25));render(root,[tx('big',100000),...tiny]);assert.equal(tone(root.all('bundle')[0]),fixed);
+  const tone=t=>t.style['--tm-tile'],get=id=>tone(root.all('tile').find(t=>t.title.includes('購入 '+id+' ｜'))),legend=()=>root.all('scale-step')[1].all('swatch')[0].style['--tm-accent'];
+  const channels=s=>s.match(/[0-9]+/g).map(Number);
+  // Measure the actual quantized sRGB fills independently, not the input to the ramp.
+  function light(s){const [r,g,b]=channels(s).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return .2104542553*Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b)+.793617785*Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b)-.0040720468*Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b)}
+  render(root,rows);const gold=get('one'),blue=get('train');assert.equal(get('two'),gold);assert.notEqual(blue,gold);assert.ok(channels(gold)[0]>channels(gold)[2]);assert.ok(channels(blue)[2]>channels(blue)[0]);assert.ok(Math.abs(light(gold)-light(blue))<.004);
+  assert.ok(light(get('small'))>light(blue));assert.ok(light(get('largest'))<light(gold));assert.equal(new Set(channels(legend())).size,1);assert.ok(Math.abs(light(legend())-light(gold))<.004);
+  render(root,rows.slice().reverse(),{category:'交通',limit:10});assert.equal(get('train'),blue);assert.equal(legend(),blue);render(root,[rows[1]]);assert.equal(get('one'),gold);render(root,rows,{type:'income'});assert.ok(Math.abs(light(get('income'))-light(gold))<.004);assert.notEqual(get('income'),gold);
+  const tiny=Array.from({length:40},(_,i)=>tx('tiny'+i,25));render(root,[tx('big',100000),...tiny]);assert.equal(tone(root.all('bundle')[0]),gold);
+  for(const hex of ['#000000','#ffffff','#0000ff','#00ff00','#ff0000']){window.TallyUI.color.食費=hex;render(root,[rows[1]]);assert.ok(Math.abs(light(get('one'))-light(blue))<.004,hex)}
 });
 const layoutKey='tally.treemap.layout.v1';
 function layoutFixture(store=new Map()){
