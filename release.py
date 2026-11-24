@@ -18,7 +18,7 @@ class OfflineCheck(HTMLParser):
 if __name__ == '__main__':
     html=(ROOT/'index.html').read_text('utf-8')
     OfflineCheck().feed(html)
-    for marker in ('window.TallyExplorer=', 'window.TallyMap=','window.TallyPlans=', 'window.TallyBulk=', 'window.TallyPrefs=', 'window.TallyHelp=', 'window.TallyGuide=', 'ax-week-day', 'cfg-category-add', 'entry-bulk', 'CSVをエクスポート', 'TallyDataActions', 'tally.treemap.layout.v1', 'tm-period-form', 'TallyOpenAnalysis', 'TallyHeat', '年間ヒートマップ', 'data-config="display"', 'TallyPortableView', '端末引き継ぎ用にエクスポート', 'queryTop(s.a,s.b,s.limit,s.category)'):
+    for marker in ('window.TallyExplorer=', 'window.TallyMap=','window.TallyPlans=', 'window.TallyBulk=', 'window.TallyPrefs=', 'window.TallyHelp=', 'window.TallyGuide=', 'ax-week-day', 'cfg-category-add', 'entry-bulk', 'CSVをエクスポート', 'TallyDataActions', 'TallyLedgerCSV','TallyExchange','import-map-form','data-import', 'tally.treemap.layout.v1', 'tm-period-form', 'TallyOpenAnalysis', 'TallyHeat', '年間ヒートマップ', 'data-config="display"', 'TallyPortableView', '端末引き継ぎ用にエクスポート', 'queryTop(s.a,s.b,s.limit,s.category)'):
         assert marker in html, f'Missing release feature: {marker}'
     package=ROOT/'Tally.zip'
     with ZipFile(package, 'w', compression=ZIP_DEFLATED) as out:

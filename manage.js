@@ -225,12 +225,13 @@
     });
     function guarded(fn) { return () => { try { fn(); } catch { L().toast('出力できませんでした。取引データやファイルサイズをご確認ください。'); } }; }
     const card=window.TallyDataActions.card;
+    const importCards=window.TallyImport.profiles.map(p=>{const b=card('IMPORT',p.name,()=>window.TallyImport(p.id),{detail:p.detail});b.dataset.importProfile=p.id;return b});
+    const imports=wrap('section','panel mgr-panel',intro('IMPORT','インポート','取り込み元を選んでください。明細はこの端末で読み取り、確認したものだけを追加します。'),wrap('div','grid mgr-data-grid',...importCards));imports.id='data-import';
     const cards=wrap('div','grid mgr-data-grid',
       card('BACKUP','端末引き継ぎ用にエクスポート',guarded(backupJSON),{detail:isDemo()?'デモの明細と設定をJSONに保存します。自分の記録は含まれません。':'JSON · 全明細、予算、カテゴリ、分類ルール、表示設定をまとめて保存'}),
       card('RESTORE','バックアップから復元',()=>{if(!isDemo())picker.click()},{detail:isDemo()?'自分の家計簿に切り替えると復元できます。':'JSON · 件数を確認して、この端末の家計簿を置き換え',disabled:isDemo(),disabledReason:'復元は自分の家計簿で利用できます。'}),
-      card('IMPORT','CSVをインポート',()=>L().importCSV(),{detail:'PayPayの明細を確認して追加'}),
       card('EXPORT','CSVをエクスポート',guarded(exportCSV),{detail:'表計算用 · 明細のみ（設定は含みません）'}));
-    root = mount(wrap('section','panel mgr-panel',intro('LOCAL DATA','保存データの概要',`保存先：${window.TallyDB?'このPCのSQLite':'このブラウザ'}${isDemo()?'（デモ表示中）':''}。取引 ${L().rows().length.toLocaleString('ja-JP')}件 ／ 予算 ${Object.keys(L().budgets()).length}件`)),cards,picker);
+    root = mount(imports,wrap('section','panel mgr-panel',intro('LOCAL DATA','エクスポート・バックアップ',`保存先：${window.TallyDB?'このPCのSQLite':'このブラウザ'}${isDemo()?'（デモ表示中）':''}。取引 ${L().rows().length.toLocaleString('ja-JP')}件 ／ 予算 ${Object.keys(L().budgets()).length}件`),cards),picker);
   }
   window.Manager = { transactions,budgets,data };
 })();
